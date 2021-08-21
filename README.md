@@ -1,5 +1,5 @@
 - 👋 Hi, I’m @aaroncarlock
-- 👀 I’m interested in learning new things, such as batch files, scripts, and coding
+- 👀 I’m interested in learning new things and improving skills in others, such as batch files, scripts, cloud services, product management, cybersecurity, and coding
 - 🌱 I’m currently learning Azure
 - 💞️ I’m looking to collaborate on anything interesting
 - 📫 How to reach me  - aaronc0027@gmail.com
