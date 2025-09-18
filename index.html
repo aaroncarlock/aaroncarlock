@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tank Sensor & Volume Tool</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f8f9fa; }
+    .container { max-width: 1200px; }
+    .card { margin-top: 20px; }
+    .results { margin-top: 20px; padding: 20px; background: #e9ecef; border-radius: 5px; }
+    .form-section { margin-top: 15px; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; background: #ffffff; }
+    .shape-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; margin-top: 15px; }
+    .shape-item { border: 1px solid #ccc; border-radius: 10px; padding: 12px; text-align: center; background: #fff; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; gap: 0.5rem; align-items: center; min-height: 180px; }
+    .shape-item:hover { background: #f1f1f1; }
+    .shape-item.active { border: 2px solid #007bff; box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.12); }
+    .shape-icon { width: 100%; display: flex; justify-content: center; align-items: center; min-height: 100px; }
+    .shape-item svg { width: 100%; max-width: 120px; height: auto; }
+    .shape-name { font-weight: 500; }
+    .shape-preview { margin-top: 20px; padding: 20px; background: #fdfdfd; border: 1px solid #dee2e6; border-radius: 10px; }
+    .shape-preview h6 { font-weight: 600; }
+    .sketch-wrapper { display: flex; justify-content: center; align-items: center; margin-top: 12px; }
+    .shape-preview svg { width: 100%; max-width: 360px; height: auto; }
+    @media (max-width: 992px) {
+      .shape-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+      .shape-item { min-height: 160px; }
+    }
+    @media (max-width: 768px) {
+      .shape-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+      .results { font-size: 0.95rem; }
+      .form-section { padding: 12px; }
+      .shape-preview { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-4">
+    <h1 class="text-center mb-4">Tank Sensor & Volume Tool</h1>
+
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" id="height-tab" data-bs-toggle="tab" data-bs-target="#height" type="button" role="tab">Height Only</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="volume-tab" data-bs-toggle="tab" data-bs-target="#volume" type="button" role="tab">Tank Volume</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+
+      <!-- Height Only -->
+      <div class="tab-pane fade show active" id="height" role="tabpanel">
+        <div class="card">
+          <div class="card-body">
+            <h5>Height Only Mode</h5>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label>Total Tank Height</label>
+                <input type="number" id="h_total_height" class="form-control" value="100">
+              </div>
+              <div class="col-md-6">
+                <label>Unit</label>
+                <select id="h_unit" class="form-select"></select>
+              </div>
+              <div class="col-md-6">
+                <label>Sensor Reading</label>
+                <input type="number" id="h_sensor_reading" class="form-control" value="20">
+              </div>
+              <div class="col-md-6">
+                <label>Offset (optional)</label>
+                <input type="number" id="h_offset" class="form-control" value="0">
+              </div>
+            </div>
+            <div class="results" id="h_results"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tank Volume -->
+      <div class="tab-pane fade" id="volume" role="tabpanel">
+        <div class="card">
+          <div class="card-body">
+            <h5>Tank Volume Mode</h5>
+            <div class="form-section">
+              <h6>Select Orientation</h6>
+              <select id="v_orientation" class="form-select mb-3"></select>
+              <h6>Select Shape</h6>
+              <div id="shapeGrid" class="shape-grid"></div>
+            </div>
+
+            <div id="shapePreview" class="shape-preview d-none">
+              <h6 id="shapePreviewTitle" class="text-muted mb-2"></h6>
+              <div id="shapePreviewSketch" class="sketch-wrapper"></div>
+            </div>
+
+            <div id="v_dimension_inputs" class="row g-3"></div>
+
+            <div class="form-section">
+              <h6>Measurement Settings</h6>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label>Dimension Unit</label>
+                  <select id="v_dim_unit" class="form-select"></select>
+                </div>
+                <div class="col-md-3">
+                  <label>Sensor Reading</label>
+                  <input type="number" id="v_sensor_reading" class="form-control" value="10">
+                </div>
+                <div class="col-md-3">
+                  <label>Offset (optional)</label>
+                  <input type="number" id="v_offset" class="form-control" value="0">
+                </div>
+                <div class="col-md-3">
+                  <label>Output Volume Unit</label>
+                  <select id="v_vol_unit" class="form-select"></select>
+                </div>
+              </div>
+            </div>
+
+            <div class="results" id="v_results"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const CONVERSION_FACTORS = {
+      linear: { "inches": 1, "centimeters": 2.54, "feet": 12, "meters": 39.3701, "yards": 36 },
+      volume: { "cubic inches": 1, "cubic centimeters": 16.3871, "cubic feet": 1728, "cubic meters": 61023.7, "cubic yards": 46656 }
+    };
+
+    const V_CALCS = {
+      cylinder: (d, h) => Math.PI * Math.pow(d / 2, 2) * h,
+      ellipsoidalHead: (d, depth) => Math.PI * Math.pow(d / 2, 2) * depth * 2 / 3,
+      torisphericalHead: (d, rk, depth) => Math.PI * Math.pow(d / 2, 2) * depth * 0.9,
+      hemisphericalHead: (d) => (2 / 3) * Math.PI * Math.pow(d / 2, 3),
+      cone: (dt, db, h) => (1 / 3) * Math.PI * h * (Math.pow(dt / 2, 2) + (dt / 2) * (db / 2) + Math.pow(db / 2, 2)),
+      cube: (s) => Math.pow(s, 3),
+      rectangle: (l, w, h) => l * w * h,
+      sphere: (d) => (4 / 3) * Math.PI * Math.pow(d / 2, 3),
+      oval: (l, w, h) => Math.PI * (l / 2) * (w / 2) * h
+    };
+
+    const SHAPES = {
+      h_cyl: { o: 'Horizontal', n: 'Cylinder', i: [{ id: 'd', l: 'Diameter' }, { id: 'l', l: 'Length' }], c: (p) => V_CALCS.cylinder(p.d, p.l) },
+      h_cyl_ellip: { o: 'Horizontal', n: 'Cylinder + Ellipsoidal Heads', i: [{ id: 'd', l: 'Diameter' }, { id: 'l', l: 'Length' }, { id: 'dep', l: 'Head Depth' }], c: (p) => V_CALCS.cylinder(p.d, p.l) + 2 * V_CALCS.ellipsoidalHead(p.d, p.dep) },
+      h_cyl_toris: { o: 'Horizontal', n: 'Cylinder + Torispherical Heads', i: [{ id: 'd', l: 'Diameter' }, { id: 'l', l: 'Length' }, { id: 'rk', l: 'Knuckle Radius' }, { id: 'dep', l: 'Depth' }], c: (p) => V_CALCS.cylinder(p.d, p.l) + 2 * V_CALCS.torisphericalHead(p.d, p.rk, p.dep) },
+      h_cyl_hemi: { o: 'Horizontal', n: 'Cylinder + Hemispherical Heads', i: [{ id: 'd', l: 'Diameter' }, { id: 'l', l: 'Length' }], c: (p) => V_CALCS.cylinder(p.d, p.l) + 2 * V_CALCS.hemisphericalHead(p.d) },
+      h_cube: { o: 'Horizontal', n: 'Cube', i: [{ id: 'bl', l: 'Base Length' }], c: (p) => V_CALCS.cube(p.bl) },
+      h_rectangle: { o: 'Horizontal', n: 'Rectangle', i: [{ id: 'l', l: 'Length' }, { id: 'w', l: 'Width' }, { id: 'h', l: 'Height' }], c: (p) => V_CALCS.rectangle(p.l, p.w, p.h) },
+      h_sphere: { o: 'Horizontal', n: 'Sphere', i: [{ id: 'd', l: 'Diameter' }], c: (p) => V_CALCS.sphere(p.d) },
+      h_oval: { o: 'Horizontal', n: 'Oval', i: [{ id: 'l', l: 'Length' }, { id: 'w', l: 'Width' }, { id: 'h', l: 'Height' }], c: (p) => V_CALCS.oval(p.l, p.w, p.h) },
+
+      v_cyl: { o: 'Vertical', n: 'Cylinder', i: [{ id: 'd', l: 'Diameter' }, { id: 'h', l: 'Height' }], c: (p) => V_CALCS.cylinder(p.d, p.h) },
+      v_cyl_ellip: { o: 'Vertical', n: 'Cylinder + Ellipsoidal Top/Bottom', i: [{ id: 'd', l: 'Diameter' }, { id: 'h', l: 'Height' }, { id: 'dep', l: 'Head Depth' }], c: (p) => V_CALCS.cylinder(p.d, p.h) + 2 * V_CALCS.ellipsoidalHead(p.d, p.dep) },
+      v_cyl_toris: { o: 'Vertical', n: 'Cylinder + Torispherical Top/Bottom', i: [{ id: 'd', l: 'Diameter' }, { id: 'h', l: 'Height' }, { id: 'rk', l: 'Knuckle Radius' }, { id: 'dep', l: 'Depth' }], c: (p) => V_CALCS.cylinder(p.d, p.h) + 2 * V_CALCS.torisphericalHead(p.d, p.rk, p.dep) },
+      v_cyl_hemi: { o: 'Vertical', n: 'Cylinder + Hemispherical Top/Bottom', i: [{ id: 'd', l: 'Diameter' }, { id: 'h', l: 'Height' }], c: (p) => V_CALCS.cylinder(p.d, p.h) + 2 * V_CALCS.hemisphericalHead(p.d) },
+      v_cyl_cone_tb: { o: 'Vertical', n: 'Cylinder + Cone Top/Bottom', i: [{ id: 'd', l: 'Diameter' }, { id: 'h', l: 'Height' }, { id: 'tdt', l: 'Top Dia Top' }, { id: 'tdb', l: 'Top Dia Bottom' }, { id: 'th', l: 'Top Height' }, { id: 'bdt', l: 'Bot Dia Top' }, { id: 'bdb', l: 'Bot Dia Bottom' }, { id: 'bh', l: 'Bot Height' }], c: (p) => V_CALCS.cylinder(p.d, p.h) + V_CALCS.cone(p.tdt, p.tdb, p.th) + V_CALCS.cone(p.bdt, p.bdb, p.bh) },
+      v_cyl_ellip_cone: { o: 'Vertical', n: 'Cyl + Ellipsoidal Top + Cone Bottom', i: [{ id: 'd', l: 'Diameter' }, { id: 'h', l: 'Height' }, { id: 'dep', l: 'Ellip Depth' }, { id: 'bdt', l: 'Bot Dia Top' }, { id: 'bdb', l: 'Bot Dia Bottom' }, { id: 'bh', l: 'Bot Height' }], c: (p) => V_CALCS.cylinder(p.d, p.h) + V_CALCS.ellipsoidalHead(p.d, p.dep) + V_CALCS.cone(p.bdt, p.bdb, p.bh) },
+      v_cyl_hemi_cone: { o: 'Vertical', n: 'Cyl + Hemispherical Top + Cone Bottom', i: [{ id: 'd', l: 'Diameter' }, { id: 'h', l: 'Height' }, { id: 'bdt', l: 'Bot Dia Top' }, { id: 'bdb', l: 'Bot Dia Bottom' }, { id: 'bh', l: 'Bot Height' }], c: (p) => V_CALCS.cylinder(p.d, p.h) + V_CALCS.hemisphericalHead(p.d) + V_CALCS.cone(p.bdt, p.bdb, p.bh) },
+      v_cyl_toris_cone: { o: 'Vertical', n: 'Cyl + Torispherical Top + Cone Bottom', i: [{ id: 'd', l: 'Diameter' }, { id: 'h', l: 'Height' }, { id: 'rk', l: 'Knuckle Radius' }, { id: 'dep', l: 'Top Depth' }, { id: 'bdt', l: 'Bot Dia Top' }, { id: 'bdb', l: 'Bot Dia Bottom' }, { id: 'bh', l: 'Bot Height' }], c: (p) => V_CALCS.cylinder(p.d, p.h) + V_CALCS.torisphericalHead(p.d, p.rk, p.dep) + V_CALCS.cone(p.bdt, p.bdb, p.bh) },
+      v_cube: { o: 'Vertical', n: 'Cube', i: [{ id: 'bl', l: 'Base Length' }], c: (p) => V_CALCS.cube(p.bl) },
+      v_rectangle: { o: 'Vertical', n: 'Rectangle', i: [{ id: 'l', l: 'Length' }, { id: 'w', l: 'Width' }, { id: 'h', l: 'Height' }], c: (p) => V_CALCS.rectangle(p.l, p.w, p.h) },
+      v_sphere: { o: 'Vertical', n: 'Sphere', i: [{ id: 'd', l: 'Diameter' }], c: (p) => V_CALCS.sphere(p.d) },
+      v_oval: { o: 'Vertical', n: 'Oval', i: [{ id: 'l', l: 'Length' }, { id: 'w', l: 'Width' }, { id: 'h', l: 'Height' }], c: (p) => V_CALCS.oval(p.l, p.w, p.h) }
+    };
+
+    const VISUAL_COLORS = {
+      bodyLight: '#e4ecfb',
+      bodyDark: '#bacdf1',
+      outline: '#2f5c8f',
+      accent: '#8aaedb',
+      highlight: '#f9fbff',
+      shade: '#a4c0e6'
+    };
+
+    function gradientDef(id, top, bottom, horizontal = false) {
+      const coords = horizontal ? `x1="0%" y1="0%" x2="100%" y2="0%"` : `x1="0%" y1="0%" x2="0%" y2="100%"`;
+      return `<defs><linearGradient id="${id}" ${coords}><stop offset="0%" stop-color="${top}"/><stop offset="100%" stop-color="${bottom}"/></linearGradient></defs>`;
+    }
+
+    function horizontalCylinderVisual(id, headStyle) {
+      const iconGrad = `${id}-icon-grad`;
+      const sketchGrad = `${id}-sketch-grad`;
+      const iconParts = [
+        gradientDef(iconGrad, '#f3f7ff', '#bcd0f0')
+      ];
+      const sketchParts = [
+        gradientDef(sketchGrad, '#f3f7ff', '#b1c9ed')
+      ];
+      if (headStyle === 'elliptical') {
+        iconParts.push(`<path d="M40 25 Q28 40 40 55 Z" fill="url(#${iconGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/>`);
+        iconParts.push(`<path d="M100 25 Q112 40 100 55 Z" fill="url(#${iconGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/>`);
+        sketchParts.push(`<path d="M100 60 Q70 90 100 120 Z" fill="url(#${sketchGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="3"/>`);
+        sketchParts.push(`<path d="M260 60 Q290 90 260 120 Z" fill="url(#${sketchGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="3"/>`);
+      }
+      if (headStyle === 'torispherical') {
+        iconParts.push(`<path d="M40 25 Q28 40 40 55 Z" fill="url(#${iconGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/>`);
+        iconParts.push(`<path d="M100 25 Q112 40 100 55 Z" fill="url(#${iconGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/>`);
+        iconParts.push(`<path d="M40 32 Q30 40 40 48" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="2"/>`);
+        iconParts.push(`<path d="M100 32 Q110 40 100 48" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="2"/>`);
+        sketchParts.push(`<path d="M100 60 Q70 90 100 120 Z" fill="url(#${sketchGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="3"/>`);
+        sketchParts.push(`<path d="M260 60 Q290 90 260 120 Z" fill="url(#${sketchGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="3"/>`);
+        sketchParts.push(`<path d="M100 74 Q80 90 100 106" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="3"/>`);
+        sketchParts.push(`<path d="M260 74 Q280 90 260 106" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="3"/>`);
+      }
+      if (headStyle === 'hemispherical') {
+        iconParts.push(`<path d="M40 25 Q18 40 40 55 Z" fill="url(#${iconGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/>`);
+        iconParts.push(`<path d="M100 25 Q122 40 100 55 Z" fill="url(#${iconGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/>`);
+        iconParts.push(`<path d="M40 38 Q26 40 40 42" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="2"/>`);
+        iconParts.push(`<path d="M100 38 Q114 40 100 42" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="2"/>`);
+        sketchParts.push(`<path d="M100 60 Q50 90 100 120 Z" fill="url(#${sketchGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="3"/>`);
+        sketchParts.push(`<path d="M260 60 Q310 90 260 120 Z" fill="url(#${sketchGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="3"/>`);
+        sketchParts.push(`<path d="M100 84 Q70 90 100 96" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="3"/>`);
+        sketchParts.push(`<path d="M260 84 Q290 90 260 96" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="3"/>`);
+      }
+      iconParts.push(`<rect x="40" y="25" width="60" height="30" rx="${headStyle === 'flat' ? 4 : 0}" fill="url(#${iconGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/>`);
+      iconParts.push(`<rect x="46" y="28" width="22" height="6" fill="${VISUAL_COLORS.highlight}" opacity="0.4"/>`);
+      if (headStyle === 'flat') {
+        iconParts.push(`<line x1="40" y1="25" x2="40" y2="55" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/>`);
+        iconParts.push(`<line x1="100" y1="25" x2="100" y2="55" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/>`);
+      }
+      sketchParts.push(`<rect x="100" y="60" width="160" height="60" rx="${headStyle === 'flat' ? 6 : 0}" fill="url(#${sketchGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="3"/>`);
+      sketchParts.push(`<rect x="120" y="70" width="70" height="14" fill="${VISUAL_COLORS.highlight}" opacity="0.35"/>`);
+      if (headStyle === 'flat') {
+        sketchParts.push(`<line x1="100" y1="60" x2="100" y2="120" stroke="${VISUAL_COLORS.outline}" stroke-width="3"/>`);
+        sketchParts.push(`<line x1="260" y1="60" x2="260" y2="120" stroke="${VISUAL_COLORS.outline}" stroke-width="3"/>`);
+      }
+      const icon = `<svg viewBox="0 0 140 80" xmlns="http://www.w3.org/2000/svg">${iconParts.join('')}</svg>`;
+      const sketch = `<svg viewBox="0 0 360 160" xmlns="http://www.w3.org/2000/svg">${sketchParts.join('')}</svg>`;
+      return { icon, sketch };
+    }
+
+    function boxVisual(id, orientation, type) {
+      const iconGrad = `${id}-icon-grad`;
+      const sketchGrad = `${id}-sketch-grad`;
+      const iconParts = [gradientDef(iconGrad, '#f2f6ff', '#bed0f2')];
+      const sketchParts = [gradientDef(sketchGrad, '#f2f6ff', '#b0c8ed')];
+      const frontWidthIcon = type === 'cube' ? 40 : (orientation === 'horizontal' ? 60 : 36);
+      const frontHeightIcon = type === 'cube' ? 40 : (orientation === 'horizontal' ? 30 : 52);
+      const iconX = 40;
+      const iconY = 28;
+      const iconDepthX = 14;
+      const iconDepthY = 10;
+      iconParts.push(`<polygon points="${iconX} ${iconY} ${iconX + frontWidthIcon} ${iconY} ${iconX + frontWidthIcon} ${iconY + frontHeightIcon} ${iconX} ${iconY + frontHeightIcon}" fill="url(#${iconGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/>`);
+      iconParts.push(`<polygon points="${iconX} ${iconY} ${iconX + iconDepthX} ${iconY - iconDepthY} ${iconX + frontWidthIcon + iconDepthX} ${iconY - iconDepthY} ${iconX + frontWidthIcon} ${iconY}" fill="${VISUAL_COLORS.highlight}" opacity="0.6" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/>`);
+      iconParts.push(`<polygon points="${iconX + frontWidthIcon} ${iconY} ${iconX + frontWidthIcon + iconDepthX} ${iconY - iconDepthY} ${iconX + frontWidthIcon + iconDepthX} ${iconY + frontHeightIcon - iconDepthY} ${iconX + frontWidthIcon} ${iconY + frontHeightIcon}" fill="${VISUAL_COLORS.shade}" opacity="0.7" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/>`);
+      const sketchFrontWidth = type === 'cube' ? 120 : (orientation === 'horizontal' ? 180 : 110);
+      const sketchFrontHeight = type === 'cube' ? 120 : (orientation === 'horizontal' ? 90 : 150);
+      const sketchX = 90;
+      const sketchY = 60;
+      const sketchDepthX = 28;
+      const sketchDepthY = 20;
+      sketchParts.push(`<polygon points="${sketchX} ${sketchY} ${sketchX + sketchFrontWidth} ${sketchY} ${sketchX + sketchFrontWidth} ${sketchY + sketchFrontHeight} ${sketchX} ${sketchY + sketchFrontHeight}" fill="url(#${sketchGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="3"/>`);
+      sketchParts.push(`<polygon points="${sketchX} ${sketchY} ${sketchX + sketchDepthX} ${sketchY - sketchDepthY} ${sketchX + sketchFrontWidth + sketchDepthX} ${sketchY - sketchDepthY} ${sketchX + sketchFrontWidth} ${sketchY}" fill="${VISUAL_COLORS.highlight}" opacity="0.55" stroke="${VISUAL_COLORS.outline}" stroke-width="3"/>`);
+      sketchParts.push(`<polygon points="${sketchX + sketchFrontWidth} ${sketchY} ${sketchX + sketchFrontWidth + sketchDepthX} ${sketchY - sketchDepthY} ${sketchX + sketchFrontWidth + sketchDepthX} ${sketchY + sketchFrontHeight - sketchDepthY} ${sketchX + sketchFrontWidth} ${sketchY + sketchFrontHeight}" fill="${VISUAL_COLORS.shade}" opacity="0.7" stroke="${VISUAL_COLORS.outline}" stroke-width="3"/>`);
+      sketchParts.push(`<line x1="${sketchX}" y1="${sketchY + sketchFrontHeight * 0.35}" x2="${sketchX + sketchFrontWidth}" y2="${sketchY + sketchFrontHeight * 0.35}" stroke="${VISUAL_COLORS.highlight}" stroke-width="4" opacity="0.25"/>`);
+      const icon = `<svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg">${iconParts.join('')}</svg>`;
+      const sketch = `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg">${sketchParts.join('')}</svg>`;
+      return { icon, sketch };
+    }
+
+    function sphereVisual(id) {
+      const iconGrad = `${id}-icon-grad`;
+      const sketchGrad = `${id}-sketch-grad`;
+      const icon = `<svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">${gradientDef(iconGrad, '#f3f7ff', '#b9cef1')}<circle cx="70" cy="70" r="36" fill="url(#${iconGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/><path d="M40 70 Q70 50 100 70" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="2"/><path d="M52 55 Q70 42 88 55" fill="none" stroke="${VISUAL_COLORS.highlight}" stroke-width="3" opacity="0.45"/></svg>`;
+      const sketch = `<svg viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">${gradientDef(sketchGrad, '#f3f7ff', '#aecaed')}<circle cx="180" cy="180" r="110" fill="url(#${sketchGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="4"/><path d="M90 180 Q180 120 270 180" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="5" opacity="0.7"/><path d="M130 140 Q180 105 230 140" fill="none" stroke="${VISUAL_COLORS.highlight}" stroke-width="6" opacity="0.35"/></svg>`;
+      return { icon, sketch };
+    }
+
+    function ovalVisual(id, orientation) {
+      const iconGrad = `${id}-icon-grad`;
+      const sketchGrad = `${id}-sketch-grad`;
+      const isHorizontal = orientation === 'Horizontal';
+      const iconRx = isHorizontal ? 42 : 30;
+      const iconRy = isHorizontal ? 26 : 38;
+      const sketchRx = isHorizontal ? 140 : 100;
+      const sketchRy = isHorizontal ? 90 : 140;
+      const icon = `<svg viewBox="0 0 160 140" xmlns="http://www.w3.org/2000/svg">${gradientDef(iconGrad, '#f3f7ff', '#bcd0f0')}<ellipse cx="80" cy="70" rx="${iconRx}" ry="${iconRy}" fill="url(#${iconGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/><ellipse cx="80" cy="70" rx="${iconRx * 0.7}" ry="${iconRy * 0.7}" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="2" opacity="0.7"/></svg>`;
+      const sketch = `<svg viewBox="0 0 360 280" xmlns="http://www.w3.org/2000/svg">${gradientDef(sketchGrad, '#f3f7ff', '#b1c9ed')}<ellipse cx="180" cy="140" rx="${sketchRx}" ry="${sketchRy}" fill="url(#${sketchGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="4"/><ellipse cx="180" cy="140" rx="${sketchRx * 0.7}" ry="${sketchRy * 0.7}" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="4" opacity="0.6"/></svg>`;
+      return { icon, sketch };
+    }
+
+    function buildVerticalHead(type, position, xLeft, xRight, yBase, gradId, scale, strokeWidth) {
+      const mid = (xLeft + xRight) / 2;
+      const height = scale;
+      if (type === 'flat') {
+        return `<line x1="${xLeft}" y1="${yBase}" x2="${xRight}" y2="${yBase}" stroke="${VISUAL_COLORS.outline}" stroke-width="${strokeWidth}"/>`;
+      }
+      if (type === 'cone') {
+        const tipY = position === 'top' ? yBase - height : yBase + height;
+        return `<path d="M${xLeft} ${yBase} L${mid} ${tipY} L${xRight} ${yBase} Z" fill="url(#${gradId})" stroke="${VISUAL_COLORS.outline}" stroke-width="${strokeWidth}"/>`;
+      }
+      const controlY = position === 'top' ? yBase - height : yBase + height;
+      let head = `<path d="M${xLeft} ${yBase} Q${mid} ${controlY} ${xRight} ${yBase} L${xRight} ${yBase} L${xLeft} ${yBase} Z" fill="url(#${gradId})" stroke="${VISUAL_COLORS.outline}" stroke-width="${strokeWidth}"/>`;
+      if (type === 'torispherical') {
+        const accentY = position === 'top' ? yBase - height * 0.5 : yBase + height * 0.5;
+        head += `<path d="M${xLeft + (position === 'top' ? 5 : 5)} ${position === 'top' ? yBase - 4 : yBase + 4} Q${mid} ${accentY} ${xRight - 5} ${position === 'top' ? yBase - 4 : yBase + 4}" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="${strokeWidth}"/>`;
+      }
+      if (type === 'hemispherical') {
+        const accentY = position === 'top' ? yBase - height * 0.65 : yBase + height * 0.65;
+        head += `<path d="M${xLeft + 4} ${position === 'top' ? yBase - 2 : yBase + 2} Q${mid} ${accentY} ${xRight - 4} ${position === 'top' ? yBase - 2 : yBase + 2}" fill="none" stroke="${VISUAL_COLORS.accent}" stroke-width="${strokeWidth}"/>`;
+      }
+      return head;
+    }
+
+    function verticalCylinderVisual(id, topType, bottomType) {
+      const iconGrad = `${id}-icon-grad`;
+      const sketchGrad = `${id}-sketch-grad`;
+      const iconParts = [gradientDef(iconGrad, '#f2f6ff', '#bed0f2')];
+      const sketchParts = [gradientDef(sketchGrad, '#f2f6ff', '#b0c8ed')];
+      const iconX = 40;
+      const iconWidth = 40;
+      const iconTop = 50;
+      const iconBottom = 120;
+      iconParts.push(buildVerticalHead(topType, 'top', iconX, iconX + iconWidth, iconTop, iconGrad, topType === 'hemispherical' ? 40 : topType === 'torispherical' ? 28 : 24, 2));
+      iconParts.push(`<rect x="${iconX}" y="${iconTop}" width="${iconWidth}" height="${iconBottom - iconTop}" fill="url(#${iconGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="2"/>`);
+      iconParts.push(`<rect x="${iconX + 6}" y="${iconTop + 8}" width="${iconWidth / 2}" height="10" fill="${VISUAL_COLORS.highlight}" opacity="0.4"/>`);
+      iconParts.push(buildVerticalHead(bottomType, 'bottom', iconX, iconX + iconWidth, iconBottom, iconGrad, bottomType === 'hemispherical' ? 40 : bottomType === 'torispherical' ? 28 : 24, 2));
+
+      const sketchX = 120;
+      const sketchWidth = 80;
+      const sketchTop = 60;
+      const sketchBottom = 200;
+      sketchParts.push(buildVerticalHead(topType, 'top', sketchX, sketchX + sketchWidth, sketchTop, sketchGrad, topType === 'hemispherical' ? 70 : topType === 'torispherical' ? 50 : 40, 4));
+      sketchParts.push(`<rect x="${sketchX}" y="${sketchTop}" width="${sketchWidth}" height="${sketchBottom - sketchTop}" fill="url(#${sketchGrad})" stroke="${VISUAL_COLORS.outline}" stroke-width="4"/>`);
+      sketchParts.push(`<rect x="${sketchX + 16}" y="${sketchTop + 20}" width="${sketchWidth / 2}" height="18" fill="${VISUAL_COLORS.highlight}" opacity="0.35"/>`);
+      sketchParts.push(buildVerticalHead(bottomType, 'bottom', sketchX, sketchX + sketchWidth, sketchBottom, sketchGrad, bottomType === 'hemispherical' ? 70 : bottomType === 'torispherical' ? 50 : 40, 4));
+      const icon = `<svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg">${iconParts.join('')}</svg>`;
+      const sketch = `<svg viewBox="0 0 360 320" xmlns="http://www.w3.org/2000/svg">${sketchParts.join('')}</svg>`;
+      return { icon, sketch };
+    }
+
+    const SHAPE_VISUALS = {
+      h_cyl: horizontalCylinderVisual('h_cyl', 'flat'),
+      h_cyl_ellip: horizontalCylinderVisual('h_cyl_ellip', 'elliptical'),
+      h_cyl_toris: horizontalCylinderVisual('h_cyl_toris', 'torispherical'),
+      h_cyl_hemi: horizontalCylinderVisual('h_cyl_hemi', 'hemispherical'),
+      h_cube: boxVisual('h_cube', 'Horizontal', 'cube'),
+      h_rectangle: boxVisual('h_rectangle', 'Horizontal', 'rect'),
+      h_sphere: sphereVisual('h_sphere'),
+      h_oval: ovalVisual('h_oval', 'Horizontal'),
+
+      v_cyl: verticalCylinderVisual('v_cyl', 'flat', 'flat'),
+      v_cyl_ellip: verticalCylinderVisual('v_cyl_ellip', 'elliptical', 'elliptical'),
+      v_cyl_toris: verticalCylinderVisual('v_cyl_toris', 'torispherical', 'torispherical'),
+      v_cyl_hemi: verticalCylinderVisual('v_cyl_hemi', 'hemispherical', 'hemispherical'),
+      v_cyl_cone_tb: verticalCylinderVisual('v_cyl_cone_tb', 'cone', 'cone'),
+      v_cyl_ellip_cone: verticalCylinderVisual('v_cyl_ellip_cone', 'elliptical', 'cone'),
+      v_cyl_hemi_cone: verticalCylinderVisual('v_cyl_hemi_cone', 'hemispherical', 'cone'),
+      v_cyl_toris_cone: verticalCylinderVisual('v_cyl_toris_cone', 'torispherical', 'cone'),
+      v_cube: boxVisual('v_cube', 'Vertical', 'cube'),
+      v_rectangle: boxVisual('v_rectangle', 'Vertical', 'rect'),
+      v_sphere: sphereVisual('v_sphere'),
+      v_oval: ovalVisual('v_oval', 'Vertical')
+    };
+
+    const linearUnits = Object.keys(CONVERSION_FACTORS.linear);
+    const volumeUnits = Object.keys(CONVERSION_FACTORS.volume);
+
+    let currentShapeId = null;
+
+    function populateSelect(id, opts) {
+      const select = document.getElementById(id);
+      select.innerHTML = "";
+      opts.forEach((opt) => {
+        const option = document.createElement("option");
+        option.value = opt;
+        option.textContent = opt;
+        select.appendChild(option);
+      });
+    }
+
+    function calculateHeightOnly() {
+      const total = parseFloat(document.getElementById("h_total_height").value) || 0;
+      const sensor = parseFloat(document.getElementById("h_sensor_reading").value) || 0;
+      const offset = parseFloat(document.getElementById("h_offset").value) || 0;
+      const unit = document.getElementById("h_unit").value;
+      const factor = 1 / CONVERSION_FACTORS.linear[unit];
+      const totalIn = total * factor;
+      const sensorIn = sensor * factor;
+      const offsetIn = offset * factor;
+      const adjustedIn = sensorIn - offsetIn;
+      const liquidIn = totalIn - adjustedIn;
+      const pct = totalIn > 0 ? (liquidIn / totalIn) * 100 : 0;
+      document.getElementById("h_results").innerHTML = `
+        <strong>Results:</strong><br>
+        Sensor Reading (adjusted): ${(adjustedIn / factor).toFixed(2)} ${unit}<br>
+        Liquid Height: ${(liquidIn / factor).toFixed(2)} ${unit}<br>
+        Percent Full: ${pct.toFixed(2)}%
+      `;
+    }
+
+    function attachHeightOnlyListeners() {
+      ["h_total_height", "h_sensor_reading", "h_offset"].forEach((id) => {
+        document.getElementById(id).addEventListener("input", calculateHeightOnly);
+      });
+      document.getElementById("h_unit").addEventListener("change", calculateHeightOnly);
+    }
+
+    function initOrientation() {
+      const orientations = [...new Set(Object.values(SHAPES).map((shape) => shape.o))];
+      populateSelect("v_orientation", orientations);
+    }
+
+    function updateShapeGrid() {
+      const orientation = document.getElementById("v_orientation").value;
+      const grid = document.getElementById("shapeGrid");
+      grid.innerHTML = "";
+      const available = Object.entries(SHAPES).filter(([id, shape]) => shape.o === orientation);
+      available.forEach(([id, shape]) => {
+        const item = document.createElement("div");
+        item.className = "shape-item";
+        item.dataset.shape = id;
+        const visuals = SHAPE_VISUALS[id];
+        item.innerHTML = `
+          <div class="shape-icon">${visuals ? visuals.icon : ''}</div>
+          <div class="shape-name">${shape.n}</div>
+        `;
+        item.addEventListener("click", () => selectShape(id));
+        grid.appendChild(item);
+      });
+      if (available.length) {
+        const target = available.some(([id]) => id === currentShapeId) ? currentShapeId : available[0][0];
+        selectShape(target);
+      } else {
+        currentShapeId = null;
+        updateDimensionInputs();
+        updateShapePreview();
+      }
+    }
+
+    function selectShape(id) {
+      if (!id) {
+        currentShapeId = null;
+        updateDimensionInputs();
+        updateShapePreview();
+        return;
+      }
+      currentShapeId = id;
+      document.querySelectorAll(".shape-item").forEach((element) => {
+        element.classList.toggle("active", element.dataset.shape === id);
+      });
+      updateDimensionInputs();
+      updateShapePreview();
+    }
+
+    function updateDimensionInputs() {
+      const container = document.getElementById("v_dimension_inputs");
+      container.innerHTML = "";
+      const shape = SHAPES[currentShapeId];
+      if (!shape) {
+        document.getElementById("v_results").innerHTML = "<em>Select a tank shape to begin calculations.</em>";
+        return;
+      }
+      shape.i.forEach((input) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "col-md-3";
+        wrapper.innerHTML = `
+          <label>${input.l}</label>
+          <input type="number" id="dim_${input.id}" class="form-control" value="10">
+        `;
+        container.appendChild(wrapper);
+      });
+      container.querySelectorAll("input").forEach((input) => {
+        input.addEventListener("input", calculateVolume);
+      });
+      calculateVolume();
+    }
+
+    function updateShapePreview() {
+      const preview = document.getElementById("shapePreview");
+      const title = document.getElementById("shapePreviewTitle");
+      const sketch = document.getElementById("shapePreviewSketch");
+      const shape = SHAPES[currentShapeId];
+      const visuals = SHAPE_VISUALS[currentShapeId];
+      if (!shape || !visuals) {
+        preview.classList.add("d-none");
+        title.textContent = "";
+        sketch.innerHTML = "";
+        return;
+      }
+      title.textContent = `${shape.o} ${shape.n}`;
+      sketch.innerHTML = visuals.sketch;
+      preview.classList.remove("d-none");
+    }
+
+    function calculateVolume() {
+      const shape = SHAPES[currentShapeId];
+      if (!shape) {
+        document.getElementById("v_results").innerHTML = "<em>Select a tank shape to begin calculations.</em>";
+        return;
+      }
+      const dimUnit = document.getElementById("v_dim_unit").value;
+      const volUnit = document.getElementById("v_vol_unit").value;
+      const sensor = parseFloat(document.getElementById("v_sensor_reading").value) || 0;
+      const offset = parseFloat(document.getElementById("v_offset").value) || 0;
+      const factor = 1 / CONVERSION_FACTORS.linear[dimUnit];
+      const params = {};
+      shape.i.forEach((input) => {
+        params[input.id] = (parseFloat(document.getElementById(`dim_${input.id}`).value) || 0) * factor;
+      });
+      const totalVol = shape.c(params);
+      const sensorIn = sensor * factor;
+      const offsetIn = offset * factor;
+      const adjustedIn = sensorIn - offsetIn;
+      const height = params.h ?? params.d ?? params.bl ?? params.l ?? 10;
+      const liquidHeight = height - adjustedIn;
+      const pct = height > 0 ? (liquidHeight / height) * 100 : 0;
+      const liquidVol = totalVol * (pct / 100);
+      const convertedTotal = totalVol / CONVERSION_FACTORS.volume[volUnit];
+      const convertedLiquid = liquidVol / CONVERSION_FACTORS.volume[volUnit];
+      document.getElementById("v_results").innerHTML = `
+        <strong>Results:</strong><br>
+        Sensor Reading (adjusted): ${(adjustedIn / factor).toFixed(2)} ${dimUnit}<br>
+        Percent Full: ${pct.toFixed(2)}%<br>
+        Total Volume: ${convertedTotal.toFixed(2)} ${volUnit}<br>
+        Liquid Volume: ${convertedLiquid.toFixed(2)} ${volUnit}
+      `;
+    }
+
+    window.addEventListener("load", () => {
+      populateSelect("h_unit", linearUnits);
+      populateSelect("v_dim_unit", linearUnits);
+      populateSelect("v_vol_unit", volumeUnits);
+      initOrientation();
+      updateShapeGrid();
+      attachHeightOnlyListeners();
+      calculateHeightOnly();
+      ["v_dim_unit", "v_vol_unit"].forEach((id) => {
+        document.getElementById(id).addEventListener("change", calculateVolume);
+      });
+      ["v_sensor_reading", "v_offset"].forEach((id) => {
+        document.getElementById(id).addEventListener("input", calculateVolume);
+      });
+      document.getElementById("v_orientation").addEventListener("change", updateShapeGrid);
+    });
+  </script>
+</body>
+</html>
